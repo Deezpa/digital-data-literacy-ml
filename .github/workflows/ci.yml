@@ -1,0 +1,72 @@
+name: ddl-ml-ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-test-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set headless matplotlib backend
+        run: echo "MPLBACKEND=Agg" >> $GITHUB_ENV
+
+      - name: Generate synthetic data
+        run: |
+          source .venv/bin/activate
+          python src/ingest/synth_generate.py --n 1200 --out data/raw/ddl_synth.csv
+
+      - name: Build features
+        run: |
+          source .venv/bin/activate
+          python src/features/make_features.py --input data/raw/ddl_synth.csv --out data/processed/ddl_features.csv
+
+      - name: Train RF model
+        run: |
+          source .venv/bin/activate
+          python src/models/train_rf.py
+
+      - name: Run fairness metrics
+        run: |
+          source .venv/bin/activate
+          python src/evaluation/fairness.py --input data/processed/ddl_features_test_with_preds.csv --target target --group region > reports/FAIRNESS_RUN.md
+          echo "" >> reports/FAIRNESS_RUN.md
+          echo "----" >> reports/FAIRNESS_RUN.md
+          echo "Invocation: python src/evaluation/fairness.py --input data/processed/ddl_features_test_with_preds.csv --target target --group region" >> reports/FAIRNESS_RUN.md
+          echo "Date: $(date -u)" >> reports/FAIRNESS_RUN.md
+
+      - name: Generate SHAP summary
+        run: |
+          source .venv/bin/activate
+          python src/visualization/shap_summary.py --model models/rf.joblib --data data/processed/ddl_features.csv --target target
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddl-ml-artifacts
+          path: |
+            reports/figures/shap_summary.png
+            reports/FAIRNESS_RUN.md
+            data/processed/ddl_features.csv
+            data/processed/ddl_features_test_with_preds.csv
+            models/rf.joblib
+            models/features.csv
+          if-no-files-found: warn
