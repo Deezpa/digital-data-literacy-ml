@@ -129,3 +129,4 @@ cython_debug/
 
 # VS Code
 .vscode/
+.github/workflows/ci.yml.save
