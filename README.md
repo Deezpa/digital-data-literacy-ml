@@ -8,7 +8,7 @@
 
 ---
 
-## 🔎 Overview
+## 🔎 Project Overview
 This repository extends the Ujjawal Women Association's **Digital Data Literacy Program** into an ML-ready project. It provides reproducible pipelines to:
 
 1. Ingest anonymized training/assessment data  
@@ -36,8 +36,8 @@ This repository extends the Ujjawal Women Association's **Digital Data Literacy 
 ---
 
 ## 🤖 ML Tasks
-- **Binary**: dropout prediction; follow-up completion  
-- **Regression**: improvement score (post - pre)  
+- **Binary classification**: dropout prediction; follow-up completion  
+- **Regression**: learning gain score (post - pre)  
 - **Uplift**: treatment effect of module variants  
 - **Clustering**: learner personas  
 
